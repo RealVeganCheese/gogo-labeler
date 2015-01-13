@@ -1,13 +1,14 @@
 {
   "name": "gogo-labeler",
-  "version": "0.1",
+  "version": "0.0.2",
   "description": "Parse indiegogo perks fulfillment csv and generate shipping labels",
   "main": "index.js",
   "dependencies": {
     "canvas": "~1.1.6",
     "extend": "~2.0.0",
     "lazy": "~1.0.11",
-    "minimist": "~1.1.0"
+    "minimist": "~1.1.0",
+    "csv-parse": "~0.0.6"
   },
   "repository": {
     "type": "git",

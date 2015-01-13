@@ -2,7 +2,7 @@
 
 var fs = require('fs');
 var path = require('path');
-var lazy = require('lazy');
+var csvParse = require('csv-parse');
 
 function keyifi(str) {
     str = str.replace(/\s*shipping\s*/ig, ''); // indiegogo specific
@@ -10,40 +10,61 @@ function keyifi(str) {
 }
 
 function clean(str) {
-    return str.replace(/[\"=]/g, ''); // indiegogo specific
+    str = str.replace(/[\"=]/g, ''); // indiegogo specific
+    if(str.replace(/\s+/g, '') == '') {
+        return null;
+    }
+    // remove leading and trailing whitespace
+    str = str.replace(/^\s+/, '').replace(/\s+$/, '');
+    return str;
 }
 
 
 var keys = null;
 var o, fields, j;
-function parseLine(line, sep, callback) {
+function parseLine(i, line, callback) {
     if(!keys) {
-        keys = line.split(sep);
+        keys = line;
         for(j=0; j < keys.length; j++) {
             keys[j] = keyifi(keys[j]);
         }
         return;
     }
     o = {};
-    fields = line.split(sep);
+    fields = line;
+    var cleaned;
     for(j=0; j < fields.length; j++) {
         if(fields[j] && keys[j]) {
-            o[keys[j]] = clean(fields[j]);
+            cleaned = clean(fields[j]);
+            if(cleaned) {
+                o[keys[j]] = cleaned;
+            }
         }
     }
     if(Object.keys(o).length > 0) {
-        callback(o);
+        callback(null, i, o);
     }
 }
 
-module.exports = function(inFile, callback, opts) {
-    opts = opts || {};
-    opts.sep = opts.sep || ',';
+module.exports = function(inFile, callback, done_callback) {
 
-    lazy(fs.createReadStream(inFile, {encoding: 'utf8'}))
-        .lines
-        .map(String)
-        .forEach(function(line) {
-            parseLine(line, opts.sep, callback);
-        });
+    var parser = csvParse()
+    var i = 1;
+
+    parser.on('readable', function() {
+        var line = parser.read();
+        parseLine(i, line, callback);
+        i++;
+    });
+
+    parser.on('error', function(err) {
+        parser.end();
+        callback("Parser error: " + err);
+    });
+
+    parser.on('finish', done_callback);
+
+    var inStream = fs.createReadStream(inFile, {encoding: 'utf8'});
+
+    inStream.pipe(parser);
 }

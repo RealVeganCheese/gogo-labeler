@@ -17,7 +17,7 @@ npm install
 cp settings.js.example settings.js
 ```
 
-You may want to tweak the settings, but try the defaults first.
+You may want to tweak the settings, but try the defaults first. 
 
 # Example usage
 
@@ -32,10 +32,51 @@ This will create a bunch of .png files in the labels/ directory. If you don't li
 
 The --country "united states" argument means every shipping address outside of the U.S. is ignored. You can also use --notCountry to do the opposite. The --local argument means that the country is not included on the label.
 
-
-Now print all the labels:
+Example using notCountry:
 
 ```
+./index.js --notCountry "united states" contributions.csv labels/
+```
+
+# Specifying required fields
+
+By default, the following fields are required:
+
+* name
+* address (or address_2)
+* city
+* zip_postal_code
+* country
+
+If --local is specified, then country is not included on the label and does not have to be specified. If the --country is "United States" then state_province is also required.
+
+To change the defaults, use --require to add more required fields:
+
+```
+./index.js --country "mexico" --require state_province,address_2 contributions.csv labels/
+```
+
+You can prevent fields from being required using --ignore:
+
+```
+./index.js --country "singapore" --ignore city contributions.csv labels/
+```
+
+# Printing the labels
+
+Make sure the ql570 command is in your PATH and do:
+
+```
+cd labels/
 for i in *.png; do ql570 /dev/usb/lp0 n $i; done
 ```
 
+# Troubleshooting
+
+If you get the error:
+
+```
+Error: Too many lines. Text does not fit on label.
+```
+
+Then try lowering the font.size or font.lineSpacing in settings.js
