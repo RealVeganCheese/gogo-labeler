@@ -1,17 +1,31 @@
 #!/usr/bin/env nodejs
 
 var fs = require('fs');
+var http = require('http');
 var path = require('path');
 var util = require('util');
+var clone = require('clone');
+var prompt = require('prompt');
 
 var argv = require('minimist')(process.argv.slice(2), {
-    boolean: ['h', 'b', 'local']
+    boolean: ['h', 'b', 'local', 'reallyPayMoney', 'labelOnly']
 });
 
 var Label = require('./label.js');
 var parseIndiegogo = require('./parse_indiegogo.js');
 
 var settings = require('./settings.js');
+var packages = require('./packages.js');
+
+var easypost = null;
+
+if(!argv.labelOnly) {
+    if(argv.reallyPayMoney) {
+        easypost = require('node-easypost')(settings.easypost.apiKey);
+    } else {
+        easypost = require('node-easypost')(settings.easypost.apiKeyTesting);
+    }
+}
 
 function fail(str, line, addr) {
     if(line) {
@@ -127,6 +141,164 @@ function mailingLabel(label, line, addr, country, inverse, local, require, ignor
     return true;
 }
 
+// verify address using easyPosst API
+function verifyAddress(address, callback) {
+    if(!easypost) {
+        return;
+    }
+    easypost.Address.create(address, function(err, address) {
+        fromAddress.verify(function(err, response) {
+            if (err) {
+                callback('Address is invalid: ' + util.inspect(address));
+            } else if (response.message !== undefined && response.message !== null) {
+                callback("Address: " + address + ". Is valid but has an issue: " + response.message);
+            } else {
+                callback(null, response);
+            }
+        });
+    });
+}
+
+function reallyBuyShippingLabel(shipment, callback) {
+    
+    // TODO make this function actually work
+
+    shipment.buy({rate: shipment.lowestRate(['USPS'])}, function(err, shipment) {
+        console.log(shipment.tracking_code);
+        console.log(shipment.postage_label.label_url);
+
+        var filename = "postage.png";
+        var f = fs.createWriteStream(filename);
+
+        http.get(shipment.postage_label.label_url, function(resp) {
+            if(resp.statusCode != 200) {
+                console.error("Error: HTTP response code " + resp.statusCode);
+                return;
+            }
+            resp.pipe(f);
+            console.log("Writing: " + filename);
+        });
+    });
+
+}
+
+function buyShippingLabel(address, perk, callback) {
+
+    // TODO convert address from indiegogo format to easypost format
+    // this involves converting the country from the country name
+    // to the two-letter country code
+
+    if(!packages[perk]) {
+        return callback("No package defined for this perk. Check packages.js");
+    }
+
+    var pack = clone(packages[perk]);
+
+
+    if(!pack.length || !pack.width || !pack.height || !pack.weight) {
+        return callback("Package must have the fields: length, width, height and weight");
+    }
+    
+
+    if(!pack.items) {
+        pack.items = [];
+    }
+
+    var i, item;
+    for(i=0; i < pack.items.length; i++) {
+        item = pack.items[i];
+
+        if(!item.description || !item.hs_tariff_number || !item.origin_country || !item.value || !item.weight) {
+            if(!argv.local) {
+                return callback("Internationally shipped items must have the following fields: description, hs_tariff_number, origin_country, value and weight");
+            }
+        }
+
+        if(!item.quantity) {
+            item.quantity = 1;
+        }
+        item.value = item.quantity * item.value;
+        item.weight = item.quantity * item.weight;
+    }
+
+    var parcel = {
+        length: pack.length,
+        width: pack.width,
+        height: pack.height,
+        weight: pack.weight
+    };
+
+    var customsInfo = {    
+        // TODO construct this
+    };
+
+    easypost.Shipment.create({
+        to_address: toAddress,
+        from_address: fromAddress,
+        parcel: parcel,
+        customs_info: customsInfo
+    }, function(err, shipment) {
+        if(err) {
+            return callback(err);
+        }
+        
+        buyOpts = {rate: shipment.lowestRate(['USPS'])};
+
+        if(!argv.reallyPayMoney) {
+            // We're just testing so don't show a warning
+            reallyBuyShippingLabel(buyOpts);
+
+        } else {
+            console.log("");
+            console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            console.log("!!                                    !!");
+            console.log("!!             WARNING!               !!");
+            console.log("!!  You are about to pay REAL MONEY!  !!");
+            console.log("!!                                    !!");
+            console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            console.log("");
+            
+            console.log("Package info:");
+            console.log("  Weight: " + pack.weight);
+            console.log("  Ship to country: " + address.country);
+            
+            if(address.country != 'US') {
+                var i;
+                if(items.length > 0) {
+                    console.log("  Customs information:");
+                }
+                for(i=0; i < pack.items.length; i++) {
+                    item = pack.items[i];
+                    console.log("    Item " + (i+1) + ":");
+                    console.log("      Description: " + item.description);
+                    console.log("      Product harmonization code: " + item.hs_tariff_number);
+                    console.log("      Origin country: " + item.origin_country);
+                    console.log("      Value: $" + item.value);
+                    console.log("      Weight: " + item.weight + " oz");
+                }
+            }
+            console.log(" ");
+            
+            var promptText = "Press the letter y and hit enter to pay the postage for the package listed above.";
+            
+            if(address.country != 'US') {
+                promptText = "Press the letter y and hit enter to pay the postage for the package listed above and to certify that the above customs information is correct. This takes the place of a signature (y/N)";   
+            }
+            
+            prompt.start();
+            prompt.get([promptText], function(err, result) {
+                
+                if(err || (result !== 'y')) {
+                    console.error("Aborted by user.");
+                    process.exit(1);
+                }
+                
+                reallyBuyShippingLabel(buyOpts);
+            });
+        }
+    });
+}
+
 function arrayToHash(arr) {
     var h = {};
     var i;
@@ -140,6 +312,12 @@ function usage(f) {
     f = f || console.error;
     f("Usage: " + __filename + " contributions.csv [output_dir]");
 }
+
+
+// ==================
+// End function defs
+// ==================
+
 
 if((argv._.length < 1)) {
     usage();
@@ -197,19 +375,29 @@ parseIndiegogo(inFile, function(err, line, person) {
         fail(err, line, person);
     }
 
-    var label = new Label(settings);
+    if(easypost && packages[argv.perk]) {
+        console.log("Generating package label (address and postage)");
 
-    if(!mailingLabel(label, line, person, settings.country, settings.countryInverseMatch, settings.local, settings.require, settings.ignore)) {
-        return false;
+        
+
+        numLabels++;
+    } else {
+        console.log("Generating letter label (address only)");
+
+        var label = new Label(settings);
+
+        if(!mailingLabel(label, line, person, settings.country, settings.countryInverseMatch, settings.local, settings.require, settings.ignore)) {
+            return false;
+        }
+
+        numLabels++;
+        
+        var outPath = path.join(outDir, 'label'+person.pledge_id+'.png');
+        
+        label.saveImage(outPath, function() {
+            console.log("Wrote label: " + outPath);
+        });
     }
-
-    numLabels++;
-   
-    var outPath = path.join(outDir, 'label'+person.pledge_id+'.png');
-
-    label.saveImage(outPath, function() {
-        console.log("Wrote label: " + outPath);
-    });
 
 }, function() {
     console.log("Successfully wrote " + numLabels + " labels.");

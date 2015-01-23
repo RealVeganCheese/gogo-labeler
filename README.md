@@ -1,4 +1,6 @@
 
+WARNING: Use the version tagged with v0.0.2 for now. This version is broken. I am working to implement buying package shipping labels using easypost. This is a work in progress.
+
 Command line utility that parses the CSV output from indiegogo and creates printable shipping labels for perk fulfillment. It is meant to be used with the Brother QL570 printer and the [ql570](https://github.com/sudomesh/ql570) print utility to print shipping labels (the narrow 29 mm label type).
 
 This software is in an early (but working) state. Improvements welcome!
@@ -70,6 +72,12 @@ Make sure the ql570 command is in your PATH and do:
 cd labels/
 for i in *.png; do ql570 /dev/usb/lp0 n $i; done
 ```
+
+# Printing package shipping labels
+
+PLEASE NOTE: Printing packages shipping labels (that include postage) is currently limited to the United States.
+
+
 
 # Troubleshooting
 

@@ -5,10 +5,13 @@
   "main": "index.js",
   "dependencies": {
     "canvas": "~1.1.6",
+    "clone": "^0.2.0",
+    "csv-parse": "~0.0.6",
     "extend": "~2.0.0",
     "lazy": "~1.0.11",
     "minimist": "~1.1.0",
-    "csv-parse": "~0.0.6"
+    "node-easypost": "2.0.5",
+    "prompt": "^0.2.14"
   },
   "repository": {
     "type": "git",

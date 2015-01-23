@@ -1,0 +1,25 @@
+
+
+// the keys in this hash should exactly match the "Perk" field 
+// from the indiegogo csv file 
+
+// Weights are in OUNCES (OZ) and go to one decimal point.
+// Dimensions are in INCHES (IN) and go to one decimal point. 
+
+// For more info see: 
+// 
+// https://www.easypost.com/customs-guide 
+
+module.exports = {
+    "T-shirt": [{
+        description: "Real Vegan Cheese T-shirt", // Brief description of item(s)
+        hs_tariff_number: 610910, // first six digits of harmonization code with dots removed ( look up at http://hts.usitc.gov/ )
+        origin_country: "US",
+        value: 11.0, // Value in US dollars of one item of this type
+        weight: 5.5, // Weight in ouncez (oz) of one item of this type
+        quantity: 1, // How many of this item is in the package
+        length: 10.2, // Length of package in inches
+        width: 7.8, // Width of package in inches
+        height: 4.3, // Height of package in inches
+    }]
+};
