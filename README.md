@@ -3,6 +3,10 @@ Command line utility that parses the CSV output from indiegogo and creates print
 
 It has two modes: One for generating address labels only and one for purchasing pre-paid USPS package shipping labels using the [easypost](https://www.easypost.com/) API.
 
+The idea is that you can print address labels for all letters weighing under 1 oz (for shipping e.g. stickers). Print one stack of address labels for all international destinations and another for all national destinations. USPS sells one type of stamp that works for all national < 1 oz letters and another that works for all international < 1 oz letters, so it is easy to slap on an address label and a stamp on each letter.
+
+For packages the postage isn't so simple and here you can buy and print the pre-paid USPS package shipping labels.
+
 The address labels can be printed using a Brother QL570 printer and the [ql570](https://github.com/sudomesh/ql570) print utility (use the narrow 29 mm label type). 
 
 To print the package shipping labels you probably want a 4x6" shipping label printer. We've used the Zebra ZPL 500 Plus and it works well.
