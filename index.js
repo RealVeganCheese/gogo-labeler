@@ -257,9 +257,8 @@ function buyShippingLabel(address, perk, output_dir, callback) {
         weight: pack.weight
     };
 
-    var customsInfo = {    
-        // TODO construct this
-    };
+    var customsInfo = clone(settings.customsInfo);
+    customsInfo.customs_items = pack.items;
 
     easypost.Shipment.create({
         to_address: toAddress,
