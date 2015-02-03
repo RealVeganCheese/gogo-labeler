@@ -167,19 +167,11 @@ function filenameize(str) {
 
 function reallyBuyShippingLabel(shipment, output_dir, callback) {
     
-    // TODO make this function actually work
-
-    if(!shipment.lowestRate) {
-        console.log(shipment);
-        return;
-    }
 
     shipment.buy({rate: shipment.lowestRate(['USPS'])}, function(err, shipment) {
         if(err) {
             return callback(err);
         }
-        console.log(shipment.tracking_code);
-        console.log(shipment.postage_label.label_url);
 
         var filename = filenameize(shipment.to_address.name)+'-'+shipment.tracking_code+'.png';
         var filepath = path.join(output_dir, filename);
@@ -191,10 +183,11 @@ function reallyBuyShippingLabel(shipment, output_dir, callback) {
                 return;
             }
             resp.pipe(f);
-            callback(null, shipment, filepath);
+            f.on('close', function() {
+                callback(null, shipment, filepath);
+            });
         });
     });
-
 }
 
 function countryNameToCode(name) {
@@ -415,7 +408,8 @@ if(easypost && argv.perk && !packages[argv.perk]) {
 
 var numLabels = 0;
 
-parseIndiegogo(inFile, function(err, line, person) {
+
+parseIndiegogo(inFile, function(err, line, person, next) {
     if(err) {
         fail(err, line, person);
     }
@@ -429,6 +423,7 @@ parseIndiegogo(inFile, function(err, line, person) {
                 process.exit(1);
             }
             console.log("Writing file: " + filepath);
+            next();
         });
 
         numLabels++;
@@ -447,9 +442,10 @@ parseIndiegogo(inFile, function(err, line, person) {
         
         label.saveImage(outPath, function() {
             console.log("Wrote label: " + outPath);
+            next();
         });
     }
 
 }, function() {
-    console.log("Successfully wrote " + numLabels + " labels.");
+    console.log("Successfully wrote " + numLabels + " label(s).");
 });

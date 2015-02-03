@@ -50,10 +50,31 @@ module.exports = function(inFile, callback, done_callback) {
 
     var parser = csvParse()
     var i = 1;
+    var readyForNext = true;
+    var weAreDone = false;
+    var doneCallbackCalled = false;
 
     parser.on('readable', function() {
+        if(!readyForNext) {
+            return;
+        }
         var line = parser.read();
-        parseLine(i, line, callback);
+        if(!line) {
+            if(weAreDone && !doneCallbackCalled) {
+                done_callback();
+                doneCallbackCalled = true;
+            }
+            return;
+        }
+        if(i > 1) {
+            readyForNext = false;
+        }
+        parseLine(i, line, function(err, line, person) {
+            callback(err, line, person, function() {
+                readyForNext = true;
+                parser.emit('readable');
+            });
+        });
         i++;
     });
 
@@ -62,7 +83,10 @@ module.exports = function(inFile, callback, done_callback) {
         callback("Parser error: " + err);
     });
 
-    parser.on('finish', done_callback);
+    parser.on('end', function() {
+        weAreDone = true;
+        parser.emit('readable');
+    });
 
     var inStream = fs.createReadStream(inFile, {encoding: 'utf8'});
 
