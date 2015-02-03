@@ -16,8 +16,9 @@ This software is in an early (but working) state. Improvements welcome!
 # Requirements
 
 ```
-sudo nodejs apt-get install libcairo2-dev libjpeg8-dev libpango1.0-dev libgif-dev build-essential g++
+sudo apt-get install nodejs libcairo2-dev libjpeg8-dev libpango1.0-dev libgif-dev build-essential g++
 
+cd gogo-labeler/
 npm install
 ```
 
@@ -28,7 +29,7 @@ cp settings.js.example settings.js
 cp packages.js.example packages.js
 ```
 
-You may want to tweak the settings, but try the defaults first. 
+For normal address labels you can go with the defaults. For pre-paid package shipping labels you will need to adjust these files quite a bit.
 
 # Adress labels (no pre-paid shipping)
 
