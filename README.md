@@ -78,6 +78,39 @@ for i in *.png; do ql570 /dev/usb/lp0 n $i; done
 PLEASE NOTE: Printing packages shipping labels (that include postage) is currently limited to the United States.
 
 
+# Printing pre-paid shipping labels
+
+## Setting up printer
+
+Add the printer using the printer settings. Use the Zebra ZPL Label Printer driver (assuming your printer has a model number starting with ZP). Make sure to set the Resolution to 203dpi, the Media Size to the 4.00x6.00" and the Media Tracking to the correct setting (probably Non-continuous (Web sensing)).
+
+You'll probably want to lower the printing speed to the lowest setting to ensure that the barcodes are nice and legible.
+
+For the Zebra ZPL 500 Plus printer there are two ways to route the label-paper through the printer. The simple straight-through way will not automatically peel the labels off the label-paper, and will require that Print Mode is set to Peel-Off. The slightly more complicated routing which is shown on the instructions on the printer will automatically peel the labels and will require that the Print Mode is set to Tear-Off.
+
+## Printing from the command line
+
+```
+lpstat -p -D
+```
+
+You will see a line like:
+
+```
+printer Zebra-ZP-500-Plus is idle.  enabled since Thu 29 Jan 2015 05:16:39 PM PST
+```
+
+Now print using:
+
+```
+lpr -P PRINTER_NAME -o page-left=0 -o page-right=0 -o page-top=0 -o page-bottom=0 FILENAME.png
+```
+
+E.g:
+
+```
+lpr -P Zebra-ZP-500-Plus -o page-left=0 -o page-right=0 -o page-top=0 -o page-bottom=0 label.png
+```
 
 # Troubleshooting
 

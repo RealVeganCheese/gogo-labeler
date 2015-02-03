@@ -97,7 +97,7 @@ module.exports = function(opts) {
         }
         var w = this.ctx.measureText(str).width;
         if(w > this.maxLineWidth) {
-            var extraLetters = Math.ceil((w - maxLineWidth) / this.letterWidth);
+            var extraLetters = Math.ceil((w - this.maxLineWidth) / this.letterWidth);
 
             if(!this.opts.allowLineBreaks) {
                 this.fail("Line " + (this.lineCount + 1) + " is too long by " + extraLetters + " letters and line breaking is not allowed (hint: use -b to allow line breaks)");

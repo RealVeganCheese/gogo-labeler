@@ -6,6 +6,7 @@ var path = require('path');
 var util = require('util');
 var clone = require('clone');
 var prompt = require('prompt');
+var countryData = require('country-data');
 
 var argv = require('minimist')(process.argv.slice(2), {
     boolean: ['h', 'b', 'local', 'reallyPayMoney', 'labelOnly']
@@ -52,7 +53,7 @@ function mailingLabel(label, line, addr, country, inverse, local, require, ignor
             addr.country = "United States";
         }
         if(addr.country.match(/^\s*united\s+states\s*$/i) && !inverse) {
-            require.state = true;
+            require.state_province = true;
         }
         
         if(country) {
@@ -102,7 +103,7 @@ function mailingLabel(label, line, addr, country, inverse, local, require, ignor
         if(addr.city) {
             label.write(addr.city);
         }
-        
+
         var key;
         if(require) {
             for(key in require) {
@@ -159,16 +160,30 @@ function verifyAddress(address, callback) {
     });
 }
 
-function reallyBuyShippingLabel(shipment, callback) {
+// turn a string into a valid filename
+function filenameize(str) {
+    return str.replace(/[^\w\d\s\.]+/g, '').replace(/\s+/g, '_').replace(/\.+/g, '.').toLowerCase();
+}
+
+function reallyBuyShippingLabel(shipment, output_dir, callback) {
     
     // TODO make this function actually work
 
+    if(!shipment.lowestRate) {
+        console.log(shipment);
+        return;
+    }
+
     shipment.buy({rate: shipment.lowestRate(['USPS'])}, function(err, shipment) {
+        if(err) {
+            return callback(err);
+        }
         console.log(shipment.tracking_code);
         console.log(shipment.postage_label.label_url);
 
-        var filename = "postage.png";
-        var f = fs.createWriteStream(filename);
+        var filename = filenameize(shipment.to_address.name)+'-'+shipment.tracking_code+'.png';
+        var filepath = path.join(output_dir, filename);
+        var f = fs.createWriteStream(filepath);
 
         http.get(shipment.postage_label.label_url, function(resp) {
             if(resp.statusCode != 200) {
@@ -176,17 +191,26 @@ function reallyBuyShippingLabel(shipment, callback) {
                 return;
             }
             resp.pipe(f);
-            console.log("Writing: " + filename);
+            callback(null, shipment, filepath);
         });
     });
 
 }
 
-function buyShippingLabel(address, perk, callback) {
+function countryNameToCode(name) {
 
-    // TODO convert address from indiegogo format to easypost format
-    // this involves converting the country from the country name
-    // to the two-letter country code
+    name = name.replace(/\s+/g, ' ').toLowerCase();
+    var key, country;
+    for(key in countryData.countries.all) {
+        country = countryData.countries.all[key];
+        if(country.name.toLowerCase() == name) {
+            return country.alpha2;
+        }
+    }
+    return null
+}
+
+function buyShippingLabel(address, perk, output_dir, callback) {
 
     if(!packages[perk]) {
         return callback("No package defined for this perk. Check packages.js");
@@ -194,11 +218,23 @@ function buyShippingLabel(address, perk, callback) {
 
     var pack = clone(packages[perk]);
 
-
     if(!pack.length || !pack.width || !pack.height || !pack.weight) {
         return callback("Package must have the fields: length, width, height and weight");
     }
-    
+    var country_code = countryNameToCode(address.country);
+    if(!country_code) {
+        return callback("Could not find country code for country: " + address.country);
+    }
+
+    var toAddress = {
+        name: address.name,
+        street1: address.address,
+        street2: address.address_2,
+        city: address.city,
+        state: address.state_province,
+        zip: address.zip_postal_code,
+        country: country_code
+    };    
 
     if(!pack.items) {
         pack.items = [];
@@ -234,20 +270,19 @@ function buyShippingLabel(address, perk, callback) {
 
     easypost.Shipment.create({
         to_address: toAddress,
-        from_address: fromAddress,
+        from_address: settings.fromAddress,
         parcel: parcel,
         customs_info: customsInfo
     }, function(err, shipment) {
         if(err) {
             return callback(err);
         }
-        
+
         buyOpts = {rate: shipment.lowestRate(['USPS'])};
 
         if(!argv.reallyPayMoney) {
             // We're just testing so don't show a warning
-            reallyBuyShippingLabel(buyOpts);
-
+            reallyBuyShippingLabel(shipment, output_dir, callback);
         } else {
             console.log("");
             console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -293,7 +328,7 @@ function buyShippingLabel(address, perk, callback) {
                     process.exit(1);
                 }
                 
-                reallyBuyShippingLabel(buyOpts);
+                reallyBuyShippingLabel(shipment, output_dir, callback);
             });
         }
     });
@@ -348,7 +383,12 @@ if(argv.country) {
     settings.country = argv.notCountry || settings.country;
     settings.countryInverseMatch = true;
 }
-settings.country = settings.country.replace(/\s+/, ' ');
+
+if(settings.country) {
+    settings.country = settings.country.replace(/\s+/, ' ');
+} else {
+    
+}
 
 
 settings.local = argv.local || settings.local;
@@ -368,6 +408,11 @@ if(argv.ignore) {
 settings.require = arrayToHash(settings.require);
 settings.ignore = arrayToHash(settings.ignore);
 
+if(easypost && argv.perk && !packages[argv.perk]) {
+    console.error("The specified perk is not defined in packages.js");
+    process.exit(1);
+}
+
 var numLabels = 0;
 
 parseIndiegogo(inFile, function(err, line, person) {
@@ -375,10 +420,16 @@ parseIndiegogo(inFile, function(err, line, person) {
         fail(err, line, person);
     }
 
-    if(easypost && packages[argv.perk]) {
-        console.log("Generating package label (address and postage)");
+    if(easypost && argv.perk && packages[argv.perk]) {
+        console.log("Buying package label (address and postage)");
 
-        
+        buyShippingLabel(person, argv.perk, outDir, function(err, shipment, filepath) {
+            if(err) {
+                console.error(err);
+                process.exit(1);
+            }
+            console.log("Writing file: " + filepath);
+        });
 
         numLabels++;
     } else {

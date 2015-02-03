@@ -6,6 +6,7 @@
   "dependencies": {
     "canvas": "~1.1.6",
     "clone": "^0.2.0",
+    "country-data": "0.0.18",
     "csv-parse": "~0.0.6",
     "extend": "~2.0.0",
     "lazy": "~1.0.11",
