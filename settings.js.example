@@ -1,0 +1,72 @@
+
+module.exports = {
+
+    // this is for the address labels only, not the prepaid shipping labels
+    allowLineBreaks: false, // allow automatic line breaking
+
+    // this is for the address labels only, not the prepaid shipping labels
+    padding: {
+        top: 15,
+        left: 15,
+        right: 15,
+        bottom: 15
+    },
+
+    // Good setting for U.S. addresses with no country on label
+    // this is for the address labels only, not the prepaid shipping labels
+    font: {
+        size: 55,
+        lineSpacing: 10,
+        color: '#000000',
+        normal: 'Inconsolata-Regular.ttf',
+        bold: 'Inconsolata-Bold.ttf'
+    },
+
+    /*
+    // Good setting for international address with country on label
+    font: {
+        size: 45,
+        lineSpacing: 10,
+        color: '#000000',
+        normal: 'Inconsolata-Regular.ttf',
+        bold: 'Inconsolata-Bold.ttf'
+    },
+    */
+    
+    label: {
+        // only change width and height if using different label paper
+        // this is for the address labels only, not the prepaid shipping labels
+        width: 1083, // in pixels,
+        height: 336 // in pixels
+    },
+
+    easypost: {
+        apiKeyTesting: '0000000000000000000000', // your easypost testing API key
+        apiKey: '1111111111111111111111', // your real actual easypost API key
+        printer: 'Zebra-ZP-500-Plus' // The printer name as shown by lpstat -p -D
+    },
+
+    // Only used for pre-paid package shipping labels
+    fromAddress: {
+        name: "Organization or person",
+        street1: "Somestreet 42",
+        street2: "Building 1337",
+        city: "Oakland",
+        state: "CA",
+        zip: "94607",
+        phone: "132-321-3142"
+    },
+
+    // Only used for pre-paid package shipping labels with an international destination
+    // For more info see: 
+    // https://www.easypost.com/customs-guide 
+    customsInfo: {
+        customs_signer: "Nobody",
+        contents_type: "gift", // The type of item you are sending. You pass one of the following: 'merchandise', 'returned_goods', 'documents', 'gift', 'sample', 'other'
+        contents_explanation: "", // Fill out if you specify "other" in contents_type
+        eel_pfc: "NOEEI 30.37(a)", // Assuming < $2,500 value of goods and non-humanitarian shipment use "NOEEI 30.36" if shipping to Canada and "NOEEI 30.37(a)" otherwise.
+        non_delivery_option: "return", // "return" or "abandon"
+        restriction_type: "none", //  Describes if your shipment requires any special treatment / quarantine when entering the country. You pass one of the following: 'none', 'other', 'quarantine', 'sanitary_phytosanitary_inspection'
+        restriction_comments: "", // Fill out if you specify "other" in restriction_type
+    }
+};

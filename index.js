@@ -22,8 +22,16 @@ var easypost = null;
 
 if(!argv.labelOnly) {
     if(argv.reallyPayMoney) {
+        if(!settings.easypost.apiKey) {
+            console.error("You must set easypost.apiKey in settings.js");
+            process.exit(1);
+        }
         easypost = require('node-easypost')(settings.easypost.apiKey);
     } else {
+        if(!settings.easypost.apiKeyTesting) {
+            console.error("You must set easypost.apiKeyTesting in settings.js");
+            process.exit(1);
+        }
         easypost = require('node-easypost')(settings.easypost.apiKeyTesting);
     }
 }
@@ -203,6 +211,17 @@ function countryNameToCode(name) {
     return null
 }
 
+// returns true if any of the values in a hash equal the specified value
+function hasValue(h, val) {
+    var key;
+    for(key in h) {
+        if(h[key] == val) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function buyShippingLabel(address, perk, output_dir, callback) {
 
     if(!packages[perk]) {
@@ -289,9 +308,9 @@ function buyShippingLabel(address, perk, output_dir, callback) {
             console.log("  Weight: " + pack.weight);
             console.log("  Ship to country: " + address.country);
             
-            if(address.country != 'US') {
+            if(toAddress.country != 'US') {
                 var i;
-                if(items.length > 0) {
+                if(pack.items.length > 0) {
                     console.log("  Customs information:");
                 }
                 for(i=0; i < pack.items.length; i++) {
@@ -314,12 +333,11 @@ function buyShippingLabel(address, perk, output_dir, callback) {
             
             prompt.start();
             prompt.get([promptText], function(err, result) {
-                
-                if(err || (result !== 'y')) {
+
+                if(err || (!hasValue(result, 'y'))) {
                     console.error("Aborted by user.");
                     process.exit(1);
                 }
-                
                 reallyBuyShippingLabel(shipment, output_dir, callback);
             });
         }
