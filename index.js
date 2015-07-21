@@ -433,6 +433,7 @@ parseIndiegogo(inFile, function(err, line, person, next) {
 
     if(easypost && argv.perk && packages[argv.perk]) {
         console.log("Buying package label (address and postage)");
+        console.log(person);
 
         buyShippingLabel(person, argv.perk, outDir, function(err, shipment, filepath) {
             if(err) {

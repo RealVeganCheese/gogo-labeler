@@ -100,9 +100,9 @@ The command line usage is the same as for the address labels, except for the fol
 * You must set the easypost settings in settings.js
 * You must set fromAddress in settings.js
 * If you are shipping internationally you must set customsInfo in settings.js
-* You must add entries in packages.js for each perk.
-** Note that the items field is only required for international shipment.
-** There is an example packages.js in packages.js.example.
+* You must add entries in packages.js for each perk. Note that the items field is only required for international shipment.
+
+There is an example packages.js in packages.js.example.
 
 ## Example usage
 
