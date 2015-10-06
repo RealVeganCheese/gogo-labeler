@@ -150,6 +150,30 @@ function mailingLabel(label, line, addr, country, inverse, local, require, ignor
     return true;
 }
 
+// find size if a size file was specified
+// and add size to perk name
+function findSize(person, callback) {
+
+    if(!argv.sizes) {
+        return callback(null, person);
+    }
+
+    var defaultSize = (argv.defaultSize || 'medium').toLowerCase();
+
+    parseIndiegogo(argv.sizes, function(err, line, sperson, next) {
+        if(err) return callback(err);
+
+        if(sperson.pledge_id == person.pledge_id) {
+            person.perk += ' ' + (person.size || defaultSize).toLowerCase();
+            return callback(null, person)
+        }
+        next();
+    }, function() {
+        person.perk += ' ' + defaultSize;
+        callback(null, person);
+    });
+}
+
 // verify address using easyPosst API
 function verifyAddress(address, callback) {
     if(!easypost) {
@@ -233,6 +257,7 @@ function buyShippingLabel(address, perk, output_dir, callback) {
     if(!pack.length || !pack.width || !pack.height || !pack.weight) {
         return callback("Package must have the fields: length, width, height and weight");
     }
+    console.log(address);
     var country_code = countryNameToCode(address.country);
     if(!country_code) {
         return callback("Could not find country code for country: " + address.country);
@@ -427,43 +452,55 @@ var numLabels = 0;
 
 
 parseIndiegogo(inFile, function(err, line, person, next) {
-    if(err) {
-        fail(err, line, person);
+    if(err) return fail(err, line, person);
+
+    if(argv.perk) {
+        if(!person.perk) {
+            next();
+            return;
+        }
+        if(argv.perk.toLowerCase() != person.perk.toLowerCase()) {
+            next();
+            return;
+        }
     }
 
-    if(easypost && argv.perk && packages[argv.perk]) {
-        console.log("Buying package label (address and postage)");
-        console.log(person);
+    findSize(person, function(err, person) {
+        if(err) return fail(err, line, person);
 
-        buyShippingLabel(person, argv.perk, outDir, function(err, shipment, filepath) {
-            if(err) {
-                console.error(err);
-                process.exit(1);
+        if(easypost && argv.perk && packages[argv.perk]) {
+            console.log("Buying package label (address and postage)");
+
+            buyShippingLabel(person, argv.perk, outDir, function(err, shipment, filepath) {
+                if(err) {
+                    console.error(err);
+                    process.exit(1);
+                }
+                console.log("Writing file: " + filepath);
+                next();
+            });
+
+            numLabels++;
+        } else {
+            console.log("Generating letter label (address only)");
+
+            var label = new Label(settings);
+
+            if(!mailingLabel(label, line, person, settings.country, settings.countryInverseMatch, settings.local, settings.require, settings.ignore)) {
+                return false;
             }
-            console.log("Writing file: " + filepath);
-            next();
-        });
 
-        numLabels++;
-    } else {
-        console.log("Generating letter label (address only)");
-
-        var label = new Label(settings);
-
-        if(!mailingLabel(label, line, person, settings.country, settings.countryInverseMatch, settings.local, settings.require, settings.ignore)) {
-            return false;
+            numLabels++;
+            
+            var outPath = path.join(outDir, 'label'+person.pledge_id+'.png');
+            
+            label.saveImage(outPath, function() {
+                console.log("Wrote label: " + outPath);
+                next();
+            });
         }
 
-        numLabels++;
-        
-        var outPath = path.join(outDir, 'label'+person.pledge_id+'.png');
-        
-        label.saveImage(outPath, function() {
-            console.log("Wrote label: " + outPath);
-            next();
-        });
-    }
-
+    });
 }, function() {
     console.log("Successfully wrote " + numLabels + " label(s).");
 });

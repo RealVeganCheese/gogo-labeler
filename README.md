@@ -76,6 +76,24 @@ You can prevent fields from being required using --ignore:
 ./index.js --country "singapore" --ignore city contributions.csv labels/
 ```
 
+## Specifying sizes
+
+If you have sizes for e.g. T-shirts then you should specify each size of t-shirt as a separate perk in packages.js with names like "t-shirt_perk_name size" e.g. if your t-shirt perk is called "Awesome T-Shirt!" then you should have packages.json entries like "Awesome T-Shirt! medium", "Awesome T-Shirt! xl", "Awesome T-Shirt! xxl" etc.
+
+You should have a separate CSV file which has the fields pledge_id and size. You specify this CSV using the --size argument, e.g:
+
+```
+./index.js --perk "Awesome T-Shirt!" --size sizes.csv contributions.csv labels/
+```
+
+You can also set the default size to use when no size is present:
+
+```
+./index.js --perk "Awesome T-Shirt!" --size sizes.csv --defaultSize medium contributions.csv labels/
+```
+
+If no defaultSize is specified then medium is used.
+
 ## Printing the address labels
 
 Make sure the ql570 command is in your PATH and do:

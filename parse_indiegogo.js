@@ -20,30 +20,33 @@ function clean(str) {
 }
 
 
-var keys = null;
-var o, fields, j;
-function parseLine(i, line, callback) {
-    if(!keys) {
-        keys = line;
-        for(j=0; j < keys.length; j++) {
-            keys[j] = keyifi(keys[j]);
+function LineParser() {
+
+    var keys = null;
+    var o, fields, j;
+    return function(i, line, callback) {
+        if(!keys) {
+            keys = line;
+            for(j=0; j < keys.length; j++) {
+                keys[j] = keyifi(keys[j]);
+            }
+            return;
         }
-        return;
-    }
-    o = {};
-    fields = line;
-    var cleaned;
-    for(j=0; j < fields.length; j++) {
-        if(fields[j] && keys[j]) {
-            cleaned = clean(fields[j]);
-            if(cleaned) {
-                o[keys[j]] = cleaned;
+        o = {};
+        fields = line;
+        var cleaned;
+        for(j=0; j < fields.length; j++) {
+            if(fields[j] && keys[j]) {
+                cleaned = clean(fields[j]);
+                if(cleaned) {
+                    o[keys[j]] = cleaned;
+                }
             }
         }
-    }
-    if(Object.keys(o).length > 0) {
-        callback(null, i, o);
-    }
+//        if(Object.keys(o).length > 0) {
+            callback(null, i, o);
+//        }
+    };
 }
 
 module.exports = function(inFile, callback, done_callback) {
@@ -53,6 +56,8 @@ module.exports = function(inFile, callback, done_callback) {
     var readyForNext = true;
     var weAreDone = false;
     var doneCallbackCalled = false;
+
+    var parseLine = new LineParser();
 
     parser.on('readable', function() {
         if(!readyForNext) {
