@@ -5,7 +5,7 @@ It has two modes: One for generating address labels only and one for purchasing 
 
 The idea is that you can print address labels for all letters weighing under 1 oz (for shipping e.g. stickers). Print one stack of address labels for all international destinations and another for all national destinations. USPS sells one type of stamp that works for all national < 1 oz letters and another that works for all international < 1 oz letters, so it is easy to slap on an address label and a stamp on each letter.
 
-For packages the postage isn't so simple and here you can buy and print the pre-paid USPS package shipping labels.
+For packages the postage isn't so simple so instead we use the easypost.com API to buy and print pre-paid USPS package shipping labels.
 
 The address labels can be printed using a Brother QL570 printer and the [ql570](https://github.com/sudomesh/ql570) print utility (use the narrow 29 mm label type). 
 
@@ -78,21 +78,29 @@ You can prevent fields from being required using --ignore:
 
 ## Specifying sizes
 
+Sizes only matter if you're printing pre-paid package labels.
+
 If you have sizes for e.g. T-shirts then you should specify each size of t-shirt as a separate perk in packages.js with names like "t-shirt_perk_name size" e.g. if your t-shirt perk is called "Awesome T-Shirt!" then you should have packages.json entries like "Awesome T-Shirt! medium", "Awesome T-Shirt! xl", "Awesome T-Shirt! xxl" etc.
 
-You should have a separate CSV file which has the fields pledge_id and size. You specify this CSV using the --size argument, e.g:
+You should have a separate CSV file which has the fields pledge_id and size. You specify this CSV using the --sizeFile argument, e.g:
 
 ```
-./index.js --perk "Awesome T-Shirt!" --size sizes.csv contributions.csv labels/
+./index.js --perk "Awesome T-Shirt!" --sizeFile sizes.csv contributions.csv labels/
 ```
 
 You can also set the default size to use when no size is present:
 
 ```
-./index.js --perk "Awesome T-Shirt!" --size sizes.csv --defaultSize medium contributions.csv labels/
+./index.js --perk "Awesome T-Shirt!" --sizeFile sizes.csv --defaultSize medium contributions.csv labels/
 ```
 
 If no defaultSize is specified then medium is used.
+
+You can also filter on size using:
+
+```
+--size xl
+```
 
 ## Printing the address labels
 

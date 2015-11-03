@@ -154,17 +154,23 @@ function mailingLabel(label, line, addr, country, inverse, local, require, ignor
 // and add size to perk name
 function findSize(person, callback) {
 
-    if(!argv.sizes) {
+    if(!argv.sizeFile) {
         return callback(null, person);
     }
 
     var defaultSize = (argv.defaultSize || 'medium').toLowerCase();
 
-    parseIndiegogo(argv.sizes, function(err, line, sperson, next) {
+    parseIndiegogo(argv.sizeFile, function(err, line, sperson, next) {
+        var size;
         if(err) return callback(err);
 
         if(sperson.pledge_id == person.pledge_id) {
-            person.perk += ' ' + (person.size || defaultSize).toLowerCase();
+            size = (sperson.size || defaultSize).toLowerCase();
+
+            if(argv.size && argv.size != size) {
+                return callback();
+            }
+            person.perk += ' ' + size;
             return callback(null, person)
         }
         next();
@@ -318,6 +324,7 @@ function buyShippingLabel(address, perk, output_dir, callback) {
 
         if(!argv.reallyPayMoney) {
             // We're just testing so don't show a warning
+            console.log("Test mode: Not actual spending any money!");
             reallyBuyShippingLabel(shipment, output_dir, callback);
         } else {
             console.log("");
@@ -408,7 +415,7 @@ if(argv._.length > 1) {
 
 settings.allowLineBreaks = argv.b || settings.allowLineBreaks;
 
-settings.font.size = argv.size || settings.font.size;
+settings.font.size = argv.fontSize || settings.font.size;
 
 
 if(argv.country) {
@@ -468,8 +475,14 @@ parseIndiegogo(inFile, function(err, line, person, next) {
     findSize(person, function(err, person) {
         if(err) return fail(err, line, person);
 
+        // if this person was size-filtered
+        if(!person) {
+            next();
+            return;
+        }
+
         if(easypost && argv.perk && packages[argv.perk]) {
-            console.log("Buying package label (address and postage)");
+            console.log("Generating package label (address and postage)");
 
             buyShippingLabel(person, argv.perk, outDir, function(err, shipment, filepath) {
                 if(err) {
