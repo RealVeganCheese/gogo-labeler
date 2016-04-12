@@ -12,7 +12,8 @@
     "lazy": "~1.0.11",
     "minimist": "~1.1.0",
     "node-easypost": "2.0.5",
-    "prompt": "^0.2.14"
+    "prompt": "^0.2.14",
+    "async": "~2.0.0-rc.3"
   },
   "repository": {
     "type": "git",

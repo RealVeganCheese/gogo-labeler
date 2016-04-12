@@ -15,6 +15,8 @@ This software is in an early (but working) state. Improvements welcome!
 
 # Requirements
 
+This code works with node v0.10.25
+
 ```
 sudo apt-get install nodejs libcairo2-dev libjpeg8-dev libpango1.0-dev libgif-dev build-essential g++
 
