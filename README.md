@@ -186,6 +186,23 @@ E.g:
 lpr -P Zebra-ZP-500-Plus -o page-left=0 -o page-right=0 -o page-top=0 -o page-bottom=0 label.png
 ```
 
+# Using this to print pre-paid shipping labels for arbitrary CSV files
+
+If you happen to have a CSV file with just a list of addresses you can still use the pre-paid postage functionality.
+
+Just use shipper.js:
+
+```
+Usage: ./shipper.js --perk "T-shirt" --out labels/ addresses.csv
+
+  Where the named perk is defined in packages.js
+  and --out specifies the dir wherein to store the shipping labels.
+```
+
+It will ask you which CSV fields map to which address fields. 
+
+Note that you can map multiple CSV files to the same address field, e.g. if your input CSV has the fields "first name" and "last name" you can map them both to the name field and they will simply be concatenated with a space between the first and last name.
+
 # Troubleshooting
 
 If you get the error:

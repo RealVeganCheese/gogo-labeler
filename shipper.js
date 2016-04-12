@@ -81,6 +81,15 @@ function prettyPrintAddress(address) {
     }
 }
 
+
+function waitForEnter(cb) {
+    prompt.start();
+    prompt.get(["Press enter to continue..."], function(err, result) {
+        if(err || !result) return cb(err || 'user abort');
+        cb();
+    });
+}
+
 function pickMapping(field, cb) {
     var promptText = "Enter the number from the list above that you want to map to the field [" + field + "] (enter to skip)";
 
@@ -120,6 +129,12 @@ function pickMapping(field, cb) {
     
 }
 
+function checkAddress(a) {
+    if(!a.name || !a.city || !a.state_province || !a.zip_postal_code || !a.country) return false;
+    if(!a.address && !a.address_2) return false;
+    return true;
+}
+
 // remap address according to mapping
 function remap(mapping, address) {
     var out = {};
@@ -141,11 +156,8 @@ function remap(mapping, address) {
 
 var keys;
 var mapping = {};
-parse(inFile, function(err, line, person, next) {
-    if(err) {
-        console.error("Error:", err);
-        process.exit(1);
-    }
+
+function parseLine(line, person, next) {
     if(Object.keys(person).length <= 0) {
         next();
         return;
@@ -185,18 +197,27 @@ parse(inFile, function(err, line, person, next) {
                 console.log("  "+key+": "+mapping[key].join(' + '));
             }
 
-
+            
             console.log("\nIf this is not correct press ctrl-c to abort and try again");
-            console.log("----------------------------\n");
-
-
             first = false;
-            next();     
+            waitForEnter(function(err) {
+                if(err) {
+                    console.log("Aborted!");
+                    process.exit(1);
+                }
+                console.log("");
+                parseLine(line, person, next);
+            })
         });
         return;
     }
 
     var address = remap(mapping, person);;
+
+    if(!checkAddress(address)) {
+        console.log("skipping blank or incomplete address on line:", line);
+        return next();
+    }
 
     console.log("Generating shipping label for: ")
     console.log("");
@@ -210,11 +231,17 @@ parse(inFile, function(err, line, person, next) {
         }
         
         console.log("Saving shipping label to:", filepath);
-
-        console.log(address);
-        process.exit(0)
         next();
     });
+}
+
+parse(inFile, function(err, line, person, next) {
+    if(err) {
+        console.error("Error:", err);
+        process.exit(1);
+    }
+
+    parseLine(line, person, next);
 
 }, function() {
     console.log("DONE!");

@@ -35,10 +35,13 @@ function reallyBuyShippingLabel(shipment, output_dir, callback) {
     
     var rate = shipment.lowestRate(['USPS']);
 
+    console.log(rate);
+
     shipment.buy({rate: rate}, function(err, shipment) {
         if(err) {
             return callback(err);
         }
+        console.log("got here:", shipment);
 
         var filename = filenameize(shipment.to_address.name)+'-'+shipment.tracking_code+'.png';
         var filepath = path.join(output_dir, filename);
@@ -134,7 +137,7 @@ function buyShippingLabel(easypost, address, perk, output_dir, opts, callback) {
 
         if(!opts.reallyPayMoney) {
             // We're just testing so don't show a warning
-            console.log("Test mode: Not actual spending any money!");
+            console.log("Test mode: Not actually spending any money!");
             reallyBuyShippingLabel(shipment, output_dir, callback);
         } else {
             console.log("");
