@@ -212,3 +212,9 @@ Error: Too many lines. Text does not fit on label.
 ```
 
 Then try lowering the font.size or font.lineSpacing in settings.js
+
+# Copyright and license
+
+Copright 2015 and 2017 Marc Juul
+
+License: AGPLv3 (see the file COPYING)
